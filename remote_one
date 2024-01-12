@@ -1,0 +1,30 @@
+import subprocess
+
+# SSH connection details
+ssh_host = 'remote_server_ip'
+ssh_port = 22
+ssh_username = 'your_ssh_username'
+ssh_password = 'your_ssh_password'
+
+# Path to the remote Python script
+remote_script_path = '/path/to/remote_script.py'
+
+# Construct the SSH command to execute commands on the remote server
+ssh_command = f'sshpass -p {ssh_password} ssh {ssh_username}@{ssh_host} -p {ssh_port}'
+
+try:
+    # Connect to the remote server
+    print("Connecting to remote server...")
+    with subprocess.Popen(ssh_command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as ssh_session:
+        # Execute the remote Python script
+        print("Executing remote Python script...")
+        script_command = f'python {remote_script_path}\n'
+        output, error = ssh_session.communicate(script_command)
+
+        if ssh_session.returncode == 0:
+            print("Remote Python script executed successfully.")
+            print("Script output on the remote server:", output)
+        else:
+            print(f"Error executing the remote Python script: {error}")
+except Exception as e:
+    print(f"Error: {str(e)}")
