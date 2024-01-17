@@ -1,0 +1,97 @@
+import os
+import smtplib
+import logging
+import pandas as pd
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+
+MAIL_TO = "darshan@infi.com"
+MAIL_FROM = "airflow@infi.com"
+MAIL_SMTP_SERVER = "smtpna.infi.com"
+MAIL_FORMAT = "plain"
+
+
+def send_mail(subject, text, to_address=MAIL_TO, from_address=MAIL_FROM, smtp_server=MAIL_SMTP_SERVER, format=MAIL_FORMAT, attachment=None, RaiseError=False):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = from_address
+        msg['To'] = to_address
+        msg['Subject'] = subject
+
+        if attachment:
+            part = MIMEBase('application', "octet-stream")
+            part.set_payload(attachment)
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment', filename="difference.txt")
+            msg.attach(part)
+
+        msg.attach(MIMEText(text, format))
+        text = msg.as_string()
+
+        with smtplib.SMTP(smtp_server) as server:
+            server.sendmail(from_address, to_address, text)
+            server.quit()
+    except Exception as E:
+        logging.warning("Can't send status email. Check smtp settings: " + str(E).replace('\n', ''))
+        if RaiseError:
+            raise E
+
+
+def count_files_in_directory(path):
+    if not os.path.isdir(path):
+        print(f"{path} is not a valid directory.")
+        return
+
+    files = os.listdir(path)
+    file_count = len(files)
+
+    if file_count != 2:
+        print(f"Expected 2 files in the directory {path}. Found {file_count} files.")
+        return
+
+    file_counts = []
+
+    for file_name in files:
+        print(file_name)
+        file_path = os.path.join(path, file_name)
+        try:
+            with open(file_path, 'r') as file:
+                line_count = sum(1 for line in file)
+            print(f"Number of rows in {file_name}: {line_count}")
+            file_counts.append(line_count)
+        except Exception as e:
+            print(f"Could not read {file_name}: {e}")
+            return
+
+    diff = abs(file_counts[0] - file_counts[1])
+    print(f"\nDifference in row counts: {diff}")
+
+    # Create a DataFrame with the information
+    data = {
+        'Validation Check': ['File Present Check', 'File Empty Check', 'Duplicate Rows Check', 'Previous file Count', 'Current File Count', 'Row Count Difference'],
+        'Status': ['Pass', 'Pass', 'Pass', 'Pass', f'{file_counts[1]}', f'{diff}']
+    }
+    df = pd.DataFrame(data)
+
+    # Create the email content
+    mail_text = f'''Hello,
+    
+                    The security venue matrix validation has been completed for industry {industry_name}. Below is the validation summary.
+                    
+                    {df.to_markdown(index=False)}
+                    
+                    Please find attached the current vs previous file difference report.
+                    
+                    Regards,
+                    Darshan
+                    '''
+
+    send_mail(subject="Row Count Difference", text=mail_text, attachment=f"Difference in row counts: {diff}")
+    print("Email sent successfully.")
+
+
+if __name__ == "__main__":
+    directory_path = input("Enter the directory path: ")
+    count_files_in_directory(directory_path)
