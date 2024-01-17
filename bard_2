@@ -1,0 +1,4 @@
+([
+    {"selector": "th", "props": [("text-align", "left"), ("font-weight", "bold")]},
+    {"selector": "", "props": [("border", "1px solid black")]}  # Add borders for all cells
+])
