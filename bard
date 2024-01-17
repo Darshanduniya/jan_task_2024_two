@@ -1,0 +1,14 @@
+data = {
+    "Check": ["File Present Check", "File Empty Check", "Duplicate Rows Check", "Previous file Count", "Current File Count", "Row Count Difference"],
+    "Status": ["Pass", "Pass", "Pass", "Pass", current_file_count, diff_count_value]
+}
+df = pd.DataFrame(data)
+
+# Apply styling for better readability (refer to the provided link for more options)
+df.style.set_properties(**{'text-align': 'left'})
+df.style.set_table_styles([
+    {"selector": "th", "props": [("text-align", "left"), ("font-weight", "bold")]}
+])
+
+# Display the formatted table
+print(df.to_string())
