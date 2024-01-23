@@ -1,0 +1,88 @@
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from airflow.providers.http.operators.http import SimpleHttpOperator
+from airflow.providers.email.operators.email import EmailOperator
+from datetime import datetime, timedelta
+import requests
+
+# Default arguments for the DAG
+default_args = {
+    'owner': 'your_name',
+    'depends_on_past': False,
+    'start_date': datetime(2024, 1, 1),
+    'email_on_failure': True,  # Enable email notifications on failure
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+# Instantiate the DAG
+dag = DAG(
+    'example_dag',
+    default_args=default_args,
+    description='An example Airflow DAG with 6 tasks',
+    schedule_interval=timedelta(days=1),  # Set the schedule interval for the DAG
+)
+
+# Task 1
+task_1 = PythonOperator(
+    task_id='task_1',
+    python_callable=lambda: print("Executing Task 1"),
+    dag=dag,
+)
+
+# Task 2
+task_2 = PythonOperator(
+    task_id='task_2',
+    python_callable=lambda: print("Executing Task 2"),
+    dag=dag,
+    on_failure_callback=[
+        'call_api_and_send_email',  # Call this task on failure
+    ]
+)
+
+# Task 3
+task_3 = PythonOperator(
+    task_id='task_3',
+    python_callable=lambda: print("Executing Task 3"),
+    dag=dag,
+    on_failure_callback=[
+        'call_api_and_send_email',  # Call this task on failure
+    ]
+)
+
+# ... (Tasks 4-6)
+
+# Task to call the API and send email on failure
+call_api_and_send_email = PythonOperator(
+    task_id='call_api_and_send_email',
+    python_callable=lambda: send_api_request_and_email(),
+    dag=dag,
+)
+
+# Define the function to call the API and send email
+def send_api_request_and_email():
+    api_url = "https://advantageqa2.irgfgfvuyhjCom"
+    payload = {
+        "error": "Apply Scoping to C Failed",
+        "result": "FAILURE",
+        "model": "",
+        "packageVersion": "",
+        "qcReportPath": "",
+        "AppliedRulesets": [],
+        "multiverseVersion": "PENDING"
+    }
+
+    # Call the API
+    response = requests.post(api_url, json=payload)
+
+    # Send email
+    # (Replace with your email configuration and content)
+    email_operator = EmailOperator(
+        task_id='send_email',
+        to='team@example.com',
+        subject='Task Failure Alert',
+        html_content='<p>One of the tasks in the DAG has failed. Please investigate.</p>',
+        dag=dag
+    )
+    email_operator.execute(context={})
