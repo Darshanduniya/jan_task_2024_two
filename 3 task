@@ -1,0 +1,8 @@
+task_3 = PythonOperator(
+    task_id='task_3',
+    python_callable=lambda: raise AirflowException("Task 3 failed intentionally"),  # Raise an exception to fail the task
+    dag=dag,
+    on_failure_callback=[
+        'call_api_and_send_email',  # Trigger the callback on failure
+    ]
+)
