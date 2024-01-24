@@ -1,0 +1,71 @@
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from datetime import datetime, timedelta
+
+default_args = {
+    'owner': 'your_name',
+    'depends_on_past': False,
+    'start_date': datetime(2024, 1, 1),
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+dag = DAG(
+    'example_dag',
+    default_args=default_args,
+    description='An example Airflow DAG with 6 tasks',
+    schedule_interval=timedelta(days=1),
+)
+
+task_1 = PythonOperator(
+    task_id='task_1',
+    python_callable=lambda: print("Executing Task 1"),
+    dag=dag,
+)
+
+task_2 = PythonOperator(
+    task_id='task_2',
+    python_callable=lambda: print("Executing Task 2"),
+    dag=dag,
+)
+
+
+task_3 = PythonOperator(
+    task_id='task_3',
+    python_callable=lambda: print("Executing Task 3"),
+    dag=dag,
+)
+
+task_4 = PythonOperator(
+    task_id='task_4',
+    python_callable=lambda: print("Executing Task 4"),
+    dag=dag,
+)
+
+task_5 = PythonOperator(
+    task_id='task_5',
+    python_callable=lambda: print("Executing Task 5"),
+    dag=dag,
+)
+
+task_6 = PythonOperator(
+    task_id='task_6',
+    python_callable=lambda: print("Upstream failed so executing "),
+    dag=dag,
+    trigger_rule='one_failed'  
+)
+
+task_7 = PythonOperator(
+    task_id='task_7',
+    python_callable=lambda: print("Executing Task 7"),
+    dag=dag,
+)
+
+task_1 >> task_6
+task_2 >> task_6
+task_3 >> task_6
+task_4 >> task_6
+task_5 >> task_6
+task_6.set_downstream(task_7)  
